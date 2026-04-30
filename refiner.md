@@ -24,7 +24,7 @@ Cameras
 
 - Pour la gt : (fichier create_bounding_box.py). $X_{monde}$
 
-Les 4 paramètres de la GT Pose sont passé dans le modèle SMPL (déterministe, pas un NN). Il en ressort ?? keypoints. On garde ensuite que 25 de ces keypoints (basé sur un mapping de OpenSim25). ??Demander à Tian JIAN comment il a fait pour avoir ce mapping. 
+Les 4 paramètres de la GT Pose sont passé dans le modèle SMPL (déterministe, pas un NN). Il en ressort ?? keypoints. On garde ensuite que 25 de ces keypoints (basé sur un mapping de OpenSim25). ??Demander à TJ comment il a fait pour avoir ce mapping. 
 
 Ces keypoints sont pelvocentrés avant de rentrer dans le data vizu. 
 
@@ -185,7 +185,7 @@ def project_world_to_image(X_world, K, R, t, k):
     Z = X_cam[:, 2]
     valid = Z > 1e-6
     
-        # 2 Passage de la 3D cam à la 2D cam (perspective)
+		# 2 Passage de la 3D cam à la 2D cam (perspective)
     X_img = np.full((X_world.shape[0], 2), np.nan, dtype=np.float32)
     if not np.any(valid):
         return X_img, valid
