@@ -1,6 +1,4 @@
-# Sans titre
-
-### Etape 2 : entrainer un refiner
+# Field Converter
 
 **ground truth :** 
 
@@ -22,9 +20,23 @@ Cameras
 "k": k, # np.array of shape (T, 2), distortion coefficients (k1, k2) = deformation de l'image
 ```
 
-Rappel de notation : 
+### Opérations que subissent les points 3d :  (issu du code)
 
-X est un ensemble de point. Par exemple : X.shape = (15, 3)
+- Pour la gt : (fichier create_bounding_box.py). $X_{monde}$
+
+Les 4 paramètres de la GT Pose sont passé dans le modèle SMPL (déterministe, pas un NN). Il en ressort ?? keypoints. On garde ensuite que 25 de ces keypoints (basé sur un mapping de OpenSim25). ??Demander à Tian JIAN comment il a fait pour avoir ce mapping. 
+
+Ces keypoints sont pelvocentrés avant de rentrer dans le data vizu. 
+
+- Pour l’estimation : (fichiers mhr_head.py, sam3d_body.py, sam_3d_body_estimator.py, preprocess_seq.py) $X_{sam3dbody}$
+
+Inversion des axes y et z, on garde que les 70 keypoints puis les 25. On remplace le point du mid hip par la moyenne des 2 points des 2 hips. 
+
+Le mapping semble globalement correct. Ça peut être une limitation. Notamment pour la loss $L_{rel}$ dans la tête 1 (expliquée plus tard). 
+
+### Rappel de notation :
+
+X est un ensemble de point. Par exemple : X.shape = (25, 3)
 
 **En indice** : le repère. Par exemple : 
 
@@ -43,15 +55,21 @@ $X^{GT}$
 Sam3DBody renvoie des poses 3D dont on ignore le repère : $X^{rel}_{?}$
 **Objectif du refiner :** 
 
-- **Tête 1  : Pose relative** : Apprendre à passer de $X^{sam3Dbody}$ = $X^{rel}_{body}$(centré pelvis, orienté selon le corps)à $X^{rel}_{cam}$ (centré pelvis, orienté selon la caméra)(ML supervisé) :
+On obtient en sortie de sam3dbody (entre autres) les keypoints 3D : $X^{transla : sam3dbody}_{rota : sam3dbody}$. Ils sont dans un repère de rotation et de translation complètement stochastique. De plus, l’axe y et z sont inversés et l’on passe de 308 keypoints à 70 puis 25. On pelvo centre cela avec :
+
+$X^{rel}_{sam3dbody} = X^{transla : sam3dbody}_{rota : sam3dbody} - X^{transla : sam3dbody}_{rota : sam3dbody}[pelvis]$
+
+- **Tête 1  : Pose relative** : Apprendre à passer de $X^{rel}_{sam3dbody}$(centré pelvis, orienté selon sam3dbody)à $X^{rel}_{cam}$ (centré pelvis, orienté selon la caméra)(ML supervisé) :
     - $X^{sam3Dbody}$, $X^{sam3Dbody}_{image(2D)}$, et autres inputs→ [MLP ou Transfo] → delta, avec 2 loss :
         - $L_{rel} = ||X^{rel pred}_{cam} - X^{rel  gt}_{cam}||$
-        - forcer : $L_{proj} = ||Π(X_{cam}^{rel}+root^{GT}_{cam})-X^{GT}_{image(2D)}||$ (loss teacher- forced)
+        - forcer : $L_{proj}^{TF} = ||Π(X_{cam}^{rel}+root^{GT}_{cam})-X^{GT}_{image(2D)}||$ (loss teacher- forced)
 - **Tête 2 : Translation globale** : Estimer root_cam = $X^{pelvis}_{cam}$ pour faire : $X_{cam}$ = $X^{rel}_{cam}$ + $root_{cam}$ (ML supervisé) :
     - $X^{sam}$, $X^{sam}_{image(2D)}$, param_cam, et autres input → [MLP ou Transfo ? ]→ root_cam = (3,)
     - $L_{root}=||root_{cam}−root^{gt}_{cam}||$
 
 Loss qui combine les 2 : $L_{proj} = ||Π(X_{cam}^{rel}+root_{cam})-X^{GT}_{image(2D)}||$
+
+Autre loss qui combine les 2 : 
 
 - **Tête 3 : Supervision orientation : exploite la GT**  `global_orients (N, T, 3)` . On la convertie en matrice de rotation $R_{body}^{world}$ avec : $K = \begin{pmatrix}0 & -u_z & u_y \\u_z & 0 & -u_x \\-u_y & u_x & 0\end{pmatrix}$
 
@@ -77,15 +95,17 @@ Avec :
 - $R^T$  la transposée de la matrice rotation R.
 - t le vecteur de translation monde / caméra.
 
+(attention aux conventions de multiplications)
+
 **Architecture : 1 seul modèle avec 3 têtes :** 
 
-**en entrée : (**Ne pas tout mettre dès le départ. Faire des ablations. Tester. Eviter l’overfitting. **)**
+**en entrée : (**Ne pas tout mettre dès le départ. Faire des ablations. Tester. Eviter l’overfitting. Penser à normaliser**)**
 
 sorties de sam3dbody : 
 
-- X3Dsam
+- X3Dsam (l’indice joueur est cohérent dans le temps, idem pour la GT)
 - X2Dsam
-- pred_cam_t [3] : translation caméra pour passer du 3D “pelvo-centered” au repère caméra. On ne prend pas ça directe pour notre RealWorld 3DHPE car on veut entrainer un modèle avec les vraies données caméra.
+- pred_cam_t [3] : translation caméra pour passer du 3D  repère “sam3dbody” au repère caméra. On ne prend pas ça directe pour notre World Convertor car on veut entrainer un modèle avec les vraies données caméra.
 - focal_length (scalaire) : $f_x$
 - pred_pose_raw [266] : concaténation de la rot globale 6D et la pose “cont” à 260 paramètres. Utilisé pour l’initialisation.
 - body_pose_params [133] : pose du corps en paramètres MHR
@@ -165,7 +185,7 @@ def project_world_to_image(X_world, K, R, t, k):
     Z = X_cam[:, 2]
     valid = Z > 1e-6
     
-		# 2 Passage de la 3D cam à la 2D cam (perspective)
+        # 2 Passage de la 3D cam à la 2D cam (perspective)
     X_img = np.full((X_world.shape[0], 2), np.nan, dtype=np.float32)
     if not np.any(valid):
         return X_img, valid
@@ -221,7 +241,7 @@ def boxes_from_2d_joints(joints_2d, valid, margin=0.1):
     x2, y2 = pts.max(axis=0)
 
     return np.array([x1, y1, x2, y2], dtype=np.float32)
-Rajouter du margin ? 
+Rajouter du margin et du bruit. 
 ```
 
 ### Petit rappel sur les paramètres caméra
@@ -238,3 +258,9 @@ $u=f_{x}x+c_{x},v=f_{y}y+c_{y}$
 - k : distorsion. Les points sur les côtés de l’image prise par la caméra sont déformés. Cette déformation est mesurée avec k1 et k2.
 
 - t : translation → position relative du monde
+
+### Limites du Word Converter :
+
+La conversion HMR → 25keypoints (estimation) peut donner des keypoints différents de la conversion SMPL → 25 keypoints (ground truth). Ce qui altèrerait la 1ère tête notament avec la loss : $L_{rel} = ||X^{rel pred}_{cam} - X^{rel  gt}_{cam}||$
+
+Entrainé uniquement sur des les matchs de la FIFA (même matchs, mêmes caméras, mêmes angles), il peut y avoir sur sur-apprentissage : un biais en inférence sur d’autres types de matchs
