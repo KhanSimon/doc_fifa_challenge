@@ -58,7 +58,6 @@ Calcul d’un score de rupture :
 
 $$
 S_{break}=
-
 C_{ray}
 -\lambda D_{player}
 $$
@@ -67,9 +66,7 @@ ou :
 
 $$
 S_{break}=
-
-C_{ray}
-+
+C_{ray}+
 \lambda
 \exp\left(-\frac{D_{player}}{\sigma}\right)
 $$
@@ -78,7 +75,6 @@ avec :
 
 $$
 C_{ray}=
-
 |d_{t+1}-2d_t+d_{t-1}|
 $$
 
@@ -88,7 +84,6 @@ et :
 
 $$
 D_{player}=
-
 \min_j dist(ray_t,X_j)
 $$
 
@@ -165,7 +160,6 @@ Calcul :
 
 $$
 B_{ground}=
-
 ray\_intersect\_z(ray,z=r_{ball})
 $$
 
@@ -173,13 +167,9 @@ Calcul du score :
 
 $$
 score_{rolling}=
-
-smoothness
-+
-linearity
-+
-speed\_valid
-+
+smoothness +
+linearity +
+speed\_valid +
 field\_valid
 $$
 
@@ -195,7 +185,6 @@ Ajustement d’une droite 2D :
 
 $$
 line\_error=
-
 dist(B,\hat B)
 $$
 
@@ -221,11 +210,8 @@ Supposer une trajectoire balistique :
 
 $$
 position(t)=
-
-position_0
-+
-vitesse_0 t
-+
+position_0+
+vitesse_0 t+
 \frac12gt^2
 $$
 
@@ -246,7 +232,6 @@ $$
 
 $$
 L_{ray}=
-
 \sum_t
 w_t
 \left|
@@ -271,9 +256,7 @@ Score :
 
 $$
 score_{flying}=
-
-ray\_error
-+
+ray\_error+
 speed\_valid
 $$
 
@@ -312,7 +295,6 @@ Calcul :
 
 $$
 \Delta t=
-
 \frac{j'-i'}{fps}
 $$
 
@@ -320,7 +302,6 @@ Vitesse initiale :
 
 $$
 V_0=
-
 \frac{
 P_1-P_0-\frac12 g\Delta t^2
 }{
@@ -332,11 +313,8 @@ Reconstruction :
 
 $$
 B(\tau)=
-
-P_0
-+
-V_0\tau
-+
+P_0+
+V_0\tau+
 \frac12g\tau^2
 $$
 
@@ -347,7 +325,6 @@ la paire qui minimise :
 
 $$
 L_{ray}=
-
 \sum_t
 w_t
 \left|
@@ -370,14 +347,12 @@ Calcul :
 
 $$
 P_0=
-
 ray_{i'}
 \cap z=r_{ball}
 $$
 
 $$
 P_1=
-
 ray_{j'}
 \cap z=r_{ball}
 $$
@@ -386,7 +361,6 @@ Temps :
 
 $$
 \Delta t=
-
 \frac{j'-i'}{fps}
 $$
 
@@ -394,7 +368,6 @@ Vitesse :
 
 $$
 V_0=
-
 \frac{
 P_1-P_0
 }{
@@ -406,7 +379,6 @@ Modèle simple :
 
 $$
 B(\tau)=
-
 P_0+V_0\tau
 $$
 
@@ -414,11 +386,8 @@ ou modèle avec décélération :
 
 $$
 B(\tau)=
-
-P_0
-+
-V_0\tau
-+
+P_0+
+V_0\tau+
 \frac12A\tau^2
 $$
 
@@ -428,15 +397,10 @@ la paire qui minimise :
 
 $$
 score=
-
-linearity
-+
-smoothness
-+
-speed\_valid
-+
-field\_valid
-+
+linearity+
+smoothness+
+speed\_valid+
+field\_valid+
 (z=r_{ball})
 $$
 
