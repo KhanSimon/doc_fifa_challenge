@@ -57,8 +57,7 @@ avec :
 Calcul d’un score de rupture :
 
 $$
-S_{break}
-=
+S_{break}=
 
 C_{ray}
 -\lambda D_{player}
@@ -67,8 +66,7 @@ $$
 ou :
 
 $$
-S_{break}
-=
+S_{break}=
 
 C_{ray}
 +
@@ -79,8 +77,7 @@ $$
 avec :
 
 $$
-C_{ray}
-=
+C_{ray}=
 
 |d_{t+1}-2d_t+d_{t-1}|
 $$
@@ -90,8 +87,7 @@ $$
 et :
 
 $$
-D_{player}
-=
+D_{player}=
 
 \min_j dist(ray_t,X_j)
 $$
@@ -168,8 +164,7 @@ $$
 Calcul :
 
 $$
-B_{ground}
-=
+B_{ground}=
 
 ray\_intersect\_z(ray,z=r_{ball})
 $$
@@ -177,8 +172,7 @@ $$
 Calcul du score :
 
 $$
-score_{rolling}
-=
+score_{rolling}=
 
 smoothness
 +
@@ -200,8 +194,7 @@ Trajectoire lisse, décélération raisonnable.
 Ajustement d’une droite 2D :
 
 $$
-line\_error
-=
+line\_error=
 
 dist(B,\hat B)
 $$
@@ -227,8 +220,7 @@ ROLLING
 Supposer une trajectoire balistique :
 
 $$
-position(t)
-=
+position(t)=
 
 position_0
 +
@@ -253,8 +245,7 @@ $$
 ### Fonction coût
 
 $$
-L_{ray}
-=
+L_{ray}=
 
 \sum_t
 w_t
@@ -279,8 +270,7 @@ distance perpendiculaire entre trajectoire reconstruite et rayon observé.
 Score :
 
 $$
-score_{flying}
-=
+score_{flying}=
 
 ray\_error
 +
@@ -321,8 +311,7 @@ impact_end = j'
 Calcul :
 
 $$
-\Delta t
-=
+\Delta t=
 
 \frac{j'-i'}{fps}
 $$
@@ -330,8 +319,7 @@ $$
 Vitesse initiale :
 
 $$
-V_0
-=
+V_0=
 
 \frac{
 P_1-P_0-\frac12 g\Delta t^2
@@ -343,8 +331,7 @@ $$
 Reconstruction :
 
 $$
-B(\tau)
-=
+B(\tau)=
 
 P_0
 +
@@ -359,8 +346,7 @@ Conserver :
 la paire qui minimise :
 
 $$
-L_{ray}
-=
+L_{ray}=
 
 \sum_t
 w_t
@@ -383,16 +369,14 @@ $$
 Calcul :
 
 $$
-P_0
-=
+P_0=
 
 ray_{i'}
 \cap z=r_{ball}
 $$
 
 $$
-P_1
-=
+P_1=
 
 ray_{j'}
 \cap z=r_{ball}
@@ -401,8 +385,7 @@ $$
 Temps :
 
 $$
-\Delta t
-=
+\Delta t=
 
 \frac{j'-i'}{fps}
 $$
@@ -410,8 +393,7 @@ $$
 Vitesse :
 
 $$
-V_0
-=
+V_0=
 
 \frac{
 P_1-P_0
@@ -423,8 +405,7 @@ $$
 Modèle simple :
 
 $$
-B(\tau)
-=
+B(\tau)=
 
 P_0+V_0\tau
 $$
@@ -432,8 +413,7 @@ $$
 ou modèle avec décélération :
 
 $$
-B(\tau)
-=
+B(\tau)=
 
 P_0
 +
@@ -447,8 +427,7 @@ Conserver :
 la paire qui minimise :
 
 $$
-score
-=
+score=
 
 linearity
 +
