@@ -41,7 +41,7 @@ avec :
 Construire pour chaque frame le rayon monde associé :
 
 $$
-B_t=o_t+\lambda_t d_t
+\mathrm{B_t=o_t+\lambda_t d_t}
 $$
 
 avec :
@@ -59,7 +59,7 @@ Calcul d’un score de rupture :
 $$
 S_{break}=
 C_{ray}
--\lambda D_{player}
+-\mathrm{\lambda D_{player}}
 $$
 
 ou :
@@ -160,7 +160,7 @@ Calcul :
 
 $$
 B_{ground}=
-ray\_intersect\_z(ray,z=r_{ball})
+\mathrm{ray\_intersect\_z(ray,z=r_{ball})}
 $$
 
 Calcul du score :
@@ -169,8 +169,8 @@ $$
 score_{rolling}=
 smoothness +
 linearity +
-speed\_valid +
-field\_valid
+\mathrm{speed\_valid} +
+\mathrm{field\_valid}
 $$
 
 avec :
@@ -184,7 +184,7 @@ Trajectoire lisse, décélération raisonnable.
 Ajustement d’une droite 2D :
 
 $$
-line\_error=
+\mathrm{line\_error}=
 dist(B,\hat B)
 $$
 
@@ -223,7 +223,7 @@ Variables :
 * (B_t) : position de la balle en coordonnées monde. origine + direction * un scalaire. 3 dimensions.
 
 $$
-B_t=o_t+\lambda_t d_t
+\mathrm{B_t=o_t+\lambda_t d_t}
 $$
 
 ---
@@ -256,8 +256,8 @@ Score :
 
 $$
 score_{flying}=
-ray\_error+
-speed\_valid
+\mathrm{ray\_error+}
+\mathrm{speed\_valid}
 $$
 
 Si le score est satisfaisant :
@@ -399,8 +399,8 @@ $$
 score=
 linearity+
 smoothness+
-speed\_valid+
-field\_valid+
+\mathrm{speed\_valid+}
+\mathrm{field\_valid+}
 (z=r_{ball})
 $$
 
