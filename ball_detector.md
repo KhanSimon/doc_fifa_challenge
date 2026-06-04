@@ -159,18 +159,19 @@ $$
 Calcul :
 
 $$
-B_{ground}=
-\mathrm{ray\_intersect\_z(ray,z=r_{ball})}
+\mathrm{B_{ground}=ray\_intersect\_z(ray,z=r_{ball})}
 $$
 
 Calcul du score :
 
 $$
+\mathrm{
 score_{rolling}=
 smoothness +
 linearity +
-\mathrm{speed\_valid} +
-\mathrm{field\_valid}
+speed\_valid +
+field\_valid
+}
 $$
 
 avec :
