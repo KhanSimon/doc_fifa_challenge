@@ -1,5 +1,6 @@
 
 
+
 # Pipeline - Méthode hybride
 
 ## Données disponibles
@@ -9,15 +10,14 @@ Pour chaque séquence (~40 secondes) :
 * vidéo broadcast (50 FPS, 1920×1080),
 * paramètres caméra par frame :
 
-  * (K(T,3,3))
-  * (R(T,3,3))
-  * (t(T,3))
-  * (k(T,2))
-* positions des keypoints des joueurs :
+  * $K(T,3,3)$
+  * $R(T,3,3)$
+  * $t(T,3)$
+  * $k(T,2)$
+* positions des keypoints des joueurs (coordonnées monde) :
 
-  * (X(N,T,25,3))
-* points clés du terrain en coordonnées monde (`pitchpoints`)
-  (((0,0,0)) au centre du rond central).
+  * $X(N,T,25,3)$
+* points clés du terrain en coordonnées monde (`pitchpoints`), $(0,0,0)$ au centre du rond central.
 
 ---
 
@@ -31,8 +31,8 @@ $$
 
 avec :
 
-* (u_t,v_t) : coordonnées pixels,
-* (w_t) : confiance du tracking.
+* $u_t,v_t$ : coordonnées pixels,
+* $w_t$ : confiance du tracking.
 
 ---
 
@@ -46,9 +46,9 @@ $$
 
 avec :
 
-* (o_t) : origine du rayon (centre caméra),
-* (d_t) : vecteur unitaire de direction,
-* (\lambda_t) : profondeur inconnue.
+* $o_t$ : origine du rayon (centre caméra),
+* $d_t$ : vecteur unitaire de direction,
+* $\lambda_t$ : profondeur inconnue.
 
 ---
 
@@ -78,7 +78,7 @@ C_{ray}=
 |d_{t+1}-2d_t+d_{t-1}|
 $$
 
-(courbure locale du rayon)
+(courbure locale du rayon, en coordonnées monde)
 
 et :
 
@@ -156,10 +156,13 @@ $$
 z=r_{ball}
 $$
 
-Calcul :
+Calculer la position de la balle en coordonnées monde si elle était au sol :
 
 $$
-\mathrm{B_{ground}=ray\_intersect\_z(ray,z=r_{ball})}
+\mathrm{
+B_{ground}=
+ray\_intersect\_z(ray,z=r_{ball})
+}
 $$
 
 Calcul du score :
@@ -210,7 +213,7 @@ ROLLING
 Supposer une trajectoire balistique :
 
 $$
-position(t)=
+B(t)=
 position_0+
 vitesse_0 t+
 \frac12gt^2
@@ -218,14 +221,11 @@ $$
 
 Variables :
 
-* (b_t=(u_t,v_t)) : position de la balle en coordonnées pixels. 2 dimensions,
-* (o_t) : origine du rayon, position de la caméra en coordonnées monde. 3 dimensions,
-* (d_t) : vecteur unitaire ||d_t||=1. Indique dans quel direction la caméra regarde. 3 dimensions,
-* (B_t) : position de la balle en coordonnées monde. origine + direction * un scalaire. 3 dimensions.
-
-$$
-\mathrm{B_t=o_t+\lambda_t d_t}
-$$
+* $position_0$ : position monde de la balle lors du premier impact. 3 dimensions
+* $vitesse_0$: vitesse initiale. 3 dimensions.
+*  $B_t$ : position de la balle en coordonnées monde.
+* $o_t$ : origine du rayon, position de la caméra en coordonnées monde. 3 dimensions
+* $d_t$ : vecteur unitaire ||d_t||=1. Indique dans quel direction la caméra regarde. 3 dimensions
 
 ---
 
@@ -247,18 +247,37 @@ $$
 (I-d_td_t^T)
 $$
 
-retire la composante parallèle au rayon.
+retire la composante parallèle au rayon. Le coût mesure donc la distance perpendiculaire entre trajectoire reconstruite et rayon observé. 
 
-Le coût mesure donc :
+**Si $position_0$ est mal estimée à l'étape 4 (se vérifie à la main) :** on veut trouver $position_0$ et $vitesse_0$ qui minimise la distance entre B et le rayon de la caméra pour chaque instant t de la trajectoire.
 
-distance perpendiculaire entre trajectoire reconstruite et rayon observé.
+**Si $position_0$ est bien estimée à l'étape 4 :** on a pas besoin d'optimiser $vitesse_0$, on l'a analytiquement : 
+$$
+V_0=
+\frac{
+P_1-P_0-\frac12g\Delta t^2
+}{
+\Delta t
+}
+$$
 
-Score :
+Une fois qu'on a calculé la fonction coût, on calcule un score :
 
 $$
 score_{flying}=
-\mathrm{ray\_error+}
-\mathrm{speed\_valid}
+ray_{error} +
+speed_{valid}
+$$
+
+$ray_{error}$ vient de $L_{ray}$ : 
+
+$$
+ray_{error}=
+\frac{
+L_{ray}
+}{
+\sum_t w_t
+}
 $$
 
 Si le score est satisfaisant :
@@ -299,7 +318,17 @@ $$
 \frac{j'-i'}{fps}
 $$
 
-Vitesse initiale :
+On a  :
+
+$$
+B(\tau)=
+P_0+
+V_0\tau+
+\frac12g\tau^2
+$$
+
+Cette equation se retrouve en intégrant l'equation : v(t)=dB/dt <=> v(t)dt = dB sur le temps 0 à t
+On en déduit la vitesse initiale au temps $\Delta t$ :
 
 $$
 V_0=
@@ -310,16 +339,7 @@ P_1-P_0-\frac12 g\Delta t^2
 }
 $$
 
-Reconstruction :
-
-$$
-B(\tau)=
-P_0+
-V_0\tau+
-\frac12g\tau^2
-$$
-
-Cette equation se retrouve en intégrant l'equation : v(t)=dB/dt <=> v(t)dt = dB sur le temps 0 à t
+Si on a un doute sur le temps des impacts, 
 Conserver :
 
 la paire qui minimise :
@@ -334,7 +354,71 @@ w_t
 \right|^2
 $$
 
----
+On pourrait s'arrêter là mais $P_0$ et $P_1$ ne sont souvent pas parfaits (bruités). 
+On optimise donc $P_0$, $P_1$ et $V_0$ avec une loss qui combine : 
+
+La distance perpendiculaire au rayon  :
+$$
+L_{ray}=
+\sum_t
+w_t
+\left|
+(I-d_td_t^T)
+(B(\tau_t)-o_t)
+\right|^2
+$$
+
+Deux contraintes souples (pour empêcher l'optimisation de trop s'éloigner des positions d'impacts détectés) :
+
+$$
+L_{impact0}=
+|B(0)-P_{impact,0}|^2
+$$
+
+$$
+L_{impact1}=
+|B(\Delta t)-P_{impact,1}|^2
+$$
+Une contrainte sur la vitesse : 
+$$
+L_{speed}=
+\max(0,|V_0|-V_{max})^2
+$$
+Et une contrainte qui pénalise les positions trop éloignées du terrain : $L_{field}$
+La loss totale se note $L_{flying}$ : 
+$$
+L_{flying}=
+L_{ray}
++
+\alpha L_{impact0}
++
+\beta L_{impact1}
++
+\gamma L_{speed}
++
+\eta L_{field}
+$$
+Une fois l'optimisation faite, on conserve :
+
+```text
+P0_final
+V0_final
+B_t pour toutes les frames du segment
+ray_error
+speed_score
+field_score
+```
+
+avec :
+
+$$
+B_t=
+P_0^{final}
++
+V_0^{final}\tau_t
++
+\frac12g\tau_t^2
+$$
 
 ## Cas ROLLING
 
@@ -342,20 +426,6 @@ Pour chaque paire :
 
 $$
 (i',j')
-$$
-
-Calcul :
-
-$$
-P_0=
-ray_{i'}
-\cap z=r_{ball}
-$$
-
-$$
-P_1=
-ray_{j'}
-\cap z=r_{ball}
 $$
 
 Temps :
@@ -383,7 +453,7 @@ B(\tau)=
 P_0+V_0\tau
 $$
 
-ou modèle avec décélération :
+ou modèle avec décélération constante :
 
 $$
 B(\tau)=
@@ -391,10 +461,9 @@ P_0+
 V_0\tau+
 \frac12A\tau^2
 $$
+Cette équation vient de la double intégration également. 
 
-Conserver :
-
-la paire qui minimise :
+Si on a un doute sur le temps des impacts, conserver la paire qui minimise :
 
 $$
 score=
@@ -405,18 +474,113 @@ smoothness+
 (z=r_{ball})
 $$
 
----
+On pourrait s'arrêter là mais $P_0$ et $P_1$ ne sont souvent pas parfaits (bruités).
 
-# Étape 7 - Raffinement global
+On optimise donc $P_0$, $P_1$, $V_0$ et $A$ avec une loss qui combine :
 
-Optimisation finale sous contraintes :
+La distance perpendiculaire au rayon :
 
-* vitesse maximale,
-* cohérence physique,
-* contrainte sol,
-* proximité joueurs,
-* continuité des trajectoires.
+$$  
+L_{ray}=  
+\sum_t  
+w_t  
+\left|  
+(I-d_td_t^T)  
+(B(\tau_t)-o_t)  
+\right|^2  
+$$
 
-Objectif :
+Deux contraintes souples (pour empêcher l'optimisation de trop s'éloigner des positions d'impacts détectés) :
 
-corriger localement les impacts et obtenir une trajectoire monde finale cohérente.
+$$  
+L_{impact0}=  
+|B(0)-P_{impact,0}|^2  
+$$
+
+$$  
+L_{impact1}=  
+|B(\Delta t)-P_{impact,1}|^2  
+$$
+
+Une contrainte sur la vitesse :
+
+$$  
+L_{speed}=   
+\max(0,|V_0|-V_{max})^2  
+$$
+
+Une contrainte qui force l’accélération $A$ à être proche de l'accélération théorique sur pelouse :
+
+$$
+L_{friction}=
+\sum_t 
+\left|
+A_t+\mu g\frac{V_t}{|V_t|+\epsilon}
+\right|^2
+$$
+car : 
+$$
+A_{friction}=
+-\mu g\frac{V}{|V|}
+$$
+
+Une contrainte qui pénalise les positions trop éloignées du terrain :
+
+$$  
+L_{field}  
+$$
+
+La contrainte de contact au sol est imposée directement :
+
+$$  
+B_z(\tau)=r_{ball}  
+$$
+
+La loss totale se note :
+
+$$  
+L_{rolling}=  
+L_{ray}  
++  
+\alpha L_{impact0}  
++  
+\beta L_{impact1}  
++  
+\gamma L_{speed}  
++  
+\eta L_{field}  
++  
+\mu L_{friction}  
+$$
+
+Une fois l’optimisation faite, on conserve :
+
+```text
+P0_final
+V0_final
+A_final
+B_t pour toutes les frames du segment
+ray_error
+speed_score
+field_score
+acc_score
+```
+
+avec :
+
+$$  
+B_t=  
+P_0^{final}  
++  
+V_0^{final}\tau_t  
++  
+\frac12A^{final}\tau_t^2  
+$$
+
+et :
+
+$$  
+B_z=r_{ball}  
+$$
+
+pour toutes les frames du segment.
